@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    command: webserver
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./etl:/opt/airflow/etl
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
+      BQ_DATASET: ${BQ_DATASET:-marketing_demo}
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    command: scheduler
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./etl:/opt/airflow/etl
+  airflow-worker:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    command: celery worker
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./etl:/opt/airflow/etl
+  fastapi:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
+      BQ_DATASET: ${BQ_DATASET:-marketing_demo}
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - fastapi

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: attribution-api-config
+data:
+  GCP_PROJECT_ID: "your-gcp-project"
+  BQ_DATASET: "marketing_demo"
