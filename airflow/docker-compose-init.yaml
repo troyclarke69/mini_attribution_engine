@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  airflow-init:
+    build:
+      context: ..
+      dockerfile: airflow/Dockerfile
+    command: airflow db init
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      PYTHONPATH: /opt/airflow
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
+      BQ_DATASET: ${BQ_DATASET:-marketing_demo}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - ../etl:/opt/airflow/etl
+      - ../airflow/airflow.db:/opt/airflow/airflow.db
+      - ../airflow/logs:/opt/airflow/logs
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/run/secrets/gcp-service-account.json:ro

@@ -14,13 +14,23 @@ A demo pipeline that ingests mock ads, clickstream events, and orders, stores no
 
 ## Local setup
 
-1. Copy `.env.example` to `.env` and set `GCP_PROJECT_ID` plus a service account path.
-2. Create the `marketing_demo` dataset and run the six files in `bq/schema/` after replacing `${GCP_PROJECT_ID}` with your project ID.
-3. Start the full local stack:
+1. Copy `.env.example` to `.env` and set `GCP_PROJECT_ID` plus your service account path.
+2. Create the `marketing_demo` dataset in BigQuery.
+3. Apply the SQL table definitions in `bq/schema/` with your project ID.
+4. Initialize Airflow metadata inside Docker before starting the full stack:
 
 ```powershell
+docker compose -f airflow/docker-compose-init.yaml up --build
+```
+
+5. Once `airflow db init` succeeds, bring the stack up:
+
+```powershell
+docker compose down
 docker compose up --build
 ```
+
+6. If you make a clean restart later, the metadata database will persist in `airflow/airflow.db` and logs in `airflow/logs`.
 
 The dashboard is at `http://localhost:3000`, FastAPI docs at `http://localhost:8000/docs`, and Airflow at `http://localhost:8080`.
 

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `${GCP_PROJECT_ID}.marketing_demo.fact_campaign_metrics` (
+CREATE TABLE IF NOT EXISTS `thub-10b72.marketing_demo.fact_campaign_metrics` (
   campaign_id STRING NOT NULL,
   metric_date DATE NOT NULL,
   spend FLOAT64 NOT NULL,
