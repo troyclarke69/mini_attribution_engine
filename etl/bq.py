@@ -28,13 +28,19 @@ def _table_id(table_name: str) -> str:
 
 
 def _insert_rows(table_name: str, rows: Sequence[Mapping[str, Any]]) -> None:
-    """Insert rows into a BigQuery table and raise on insert errors."""
+    """Load rows into a BigQuery table via a batch JSON load job."""
     if not rows:
         LOGGER.info("No rows to write to %s", table_name)
         return
-    errors = get_bq_client().insert_rows_json(_table_id(table_name), list(rows))
-    if errors:
-        raise RuntimeError(f"BigQuery insert errors for {table_name}: {errors}")
+
+    client = get_bq_client()
+    table_id = _table_id(table_name)
+    job_config = bigquery.LoadJobConfig(
+        source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+        write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+    )
+    job = client.load_table_from_json(list(rows), table_id, job_config=job_config)
+    job.result()
     LOGGER.info("Inserted %d rows into %s", len(rows), table_name)
 
 

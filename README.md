@@ -29,10 +29,14 @@ docker compose -f airflow/docker-compose-init.yaml up --build
 docker compose down
 docker compose up --build
 ```
+**NOTE: airflow-worker container will not shown as up and running due to compose settings** 
+AIRFLOW__CORE__EXECUTOR: SequentialExecutor
 
 6. If you make a clean restart later, the metadata database will persist in `airflow/airflow.db` and logs in `airflow/logs`.
 
-The dashboard is at `http://localhost:3000`, FastAPI docs at `http://localhost:8000/docs`, and Airflow at `http://localhost:8080`.
+The dashboard is at `http://localhost:3000`, 
+FastAPI docs at `http://localhost:8000/docs`, 
+and Airflow at `http://localhost:8080`.
 
 ## API
 
