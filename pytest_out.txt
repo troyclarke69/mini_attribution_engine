@@ -1,0 +1,212 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+____________________________ test_metrics_summary _____________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000222390BAB10>
+
+    def test_metrics_summary(monkeypatch):
+        monkeypatch.setattr("api.routers.metrics.get_bq_client", lambda: FakeClient())
+        response = client.get("/metrics/summary")
+>       assert response.status_code == 200
+E       assert 503 == 200
+E        +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests\test_api_endpoints.py:104: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    api.routers.metrics:metrics.py:145 Could not query campaign summary
+Traceback (most recent call last):
+  File "C:\Projects\mini_attribution_engine\api\routers\metrics.py", line 143, in get_summary
+    campaigns = _query_metrics()
+  File "C:\Projects\mini_attribution_engine\api\routers\metrics.py", line 59, in _query_metrics
+    return [_row_to_metric(row) for row in get_bq_client().query(query, job_config=job_config).result()]
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'result'
+__________________________ test_roas_trend_endpoint ___________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000222390BBA80>
+
+    def test_roas_trend_endpoint(monkeypatch):
+        monkeypatch.setattr("api.routers.metrics.get_bq_client", lambda: FakeClient())
+        response = client.get("/metrics/trend/roas?campaign_id=camp-1")
+>       assert response.status_code == 200
+E       assert 503 == 200
+E        +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests\test_api_endpoints.py:113: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    api.routers.metrics:metrics.py:198 Could not query roas trend
+Traceback (most recent call last):
+  File "C:\Projects\mini_attribution_engine\api\routers\metrics.py", line 195, in _query_trend
+    rows = get_bq_client().query(query, job_config=bigquery.QueryJobConfig(query_parameters=params)).result()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'result'
+__________________________ test_raw_orders_endpoint ___________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000222390EFAD0>
+
+    def test_raw_orders_endpoint(monkeypatch):
+        monkeypatch.setattr("api.routers.metrics.get_bq_client", lambda: FakeClient())
+>       response = client.get("/raw/orders?customer_id=customer-1&limit=10&offset=0")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_api_endpoints.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\testclient.py:518: in get
+    return super().get(
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\httpx\_client.py:1053: in get
+    return self.request(
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\testclient.py:488: in request
+    return super().request(
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\httpx\_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\httpx\_client.py:914: in send
+    response = self._send_handling_auth(
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\httpx\_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\httpx\_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\httpx\_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\testclient.py:381: in handle_request
+    raise exc
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\testclient.py:378: in handle_request
+    portal.call(self.app, scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\anyio\from_thread.py:334: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python313\Lib\concurrent\futures\_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+C:\Python313\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\anyio\from_thread.py:259: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\fastapi\applications.py:1054: in __call__
+    await super().__call__(scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\applications.py:113: in __call__
+    await self.middleware_stack(scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\errors.py:187: in __call__
+    raise exc
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\errors.py:165: in __call__
+    await self.app(scope, receive, _send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\cors.py:85: in __call__
+    await self.app(scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\middleware\exceptions.py:62: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py:62: in wrapped_app
+    raise exc
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py:51: in wrapped_app
+    await app(scope, receive, sender)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py:715: in __call__
+    await self.middleware_stack(scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py:735: in app
+    await route.handle(scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py:288: in handle
+    await self.app(scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py:76: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py:62: in wrapped_app
+    raise exc
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\_exception_handler.py:51: in wrapped_app
+    await app(scope, receive, sender)
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\routing.py:73: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\fastapi\routing.py:301: in app
+    raw_response = await run_endpoint_function(
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\fastapi\routing.py:214: in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\starlette\concurrency.py:39: in run_in_threadpool
+    return await anyio.to_thread.run_sync(func, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\anyio\to_thread.py:63: in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\anyio\_backends\_asyncio.py:2518: in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+C:\Users\tclar\AppData\Roaming\Python\Python313\site-packages\anyio\_backends\_asyncio.py:1002: in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+api\routers\metrics.py:275: in get_raw_orders
+    return _build_raw_response(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+table_name = 'fact_orders'
+select_columns = 'order_id, customer_id, order_ts, order_date, revenue, currency, inserted_at'
+field_filters = {'customer_id': 'customer-1'}, date_field = 'order_date'
+order_by = 'order_date', limit = 10, offset = 0, date_from = None
+date_to = None
+
+    def _build_raw_response(
+        table_name: str,
+        select_columns: str,
+        field_filters: dict[str, str | None],
+        date_field: str,
+        order_by: str,
+        limit: int,
+        offset: int,
+        date_from: date | None,
+        date_to: date | None,
+    ) -> dict[str, Any]:
+        """Execute a filtered, paginated raw-data query."""
+        allowed_orders = {
+            "date": "date",
+            "spend": "spend",
+            "order_ts": "order_ts",
+            "revenue": "revenue",
+            "event_ts": "event_ts",
+            "touch_ts": "touch_ts",
+            "order_date": "order_date",
+            "event_date": "event_date",
+        }
+        if order_by not in allowed_orders:
+            raise HTTPException(status_code=400, detail=f"Unsupported sort field: {order_by}")
+    
+        clauses: list[str] = []
+        params: list[bigquery.ScalarQueryParameter] = []
+        for key, value in field_filters.items():
+            if value is None or value == "":
+                continue
+            clauses.append(f"{key} = @{key}")
+            params.append(bigquery.ScalarQueryParameter(key, "STRING", str(value)))
+    
+        if date_from is not None or date_to is not None:
+            if date_from is not None:
+                clauses.append(f"{date_field} >= CAST(@date_from AS DATE)")
+                params.append(bigquery.ScalarQueryParameter("date_from", "STRING", date_from.isoformat()))
+            if date_to is not None:
+                clauses.append(f"{date_field} <= CAST(@date_to AS DATE)")
+                params.append(bigquery.ScalarQueryParameter("date_to", "STRING", date_to.isoformat()))
+    
+        where_sql = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+        data_query = f"""
+        SELECT {select_columns}
+        FROM `{PROJECT_ID}.{DATASET_ID}.{table_name}`
+        {where_sql}
+        ORDER BY {allowed_orders[order_by]} DESC
+        LIMIT @limit OFFSET @offset
+        """
+        count_query = f"""
+        SELECT COUNT(*) AS total_count
+        FROM `{PROJECT_ID}.{DATASET_ID}.{table_name}`
+        {where_sql}
+        """
+        params.extend([
+            bigquery.ScalarQueryParameter("limit", "INT64", limit),
+            bigquery.ScalarQueryParameter("offset", "INT64", offset),
+        ])
+>       total_rows = get_bq_client().query(count_query, job_config=bigquery.QueryJobConfig(query_parameters=params)).result()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'result'
+
+api\routers\metrics.py:133: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/test_api_endpoints.py::test_metrics_summary - assert 503 == 200
+FAILED tests/test_api_endpoints.py::test_roas_trend_endpoint - assert 503 == 200
+FAILED tests/test_api_endpoints.py::test_raw_orders_endpoint - AttributeError...
+3 failed in 8.13s
