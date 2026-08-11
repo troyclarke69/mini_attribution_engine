@@ -9,3 +9,4 @@ numpy
 joblib
 pandas
 pyarrow
+db-dtypes

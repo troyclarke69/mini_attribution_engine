@@ -13,7 +13,7 @@ services:
       - ./etl:/opt/airflow/etl
       - ./airflow/airflow.db:/opt/airflow/airflow.db
       - ./airflow/logs:/opt/airflow/logs
-      - ${GOOGLE_APPLICATION_CREDENTIALS}:/run/secrets/gcp-service-account.json:ro
+      - ./gcp/service-account.json:/run/secrets/gcp-service-account.json:ro
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
@@ -21,6 +21,7 @@ services:
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
+
   airflow-scheduler:
     build:
       context: .
@@ -31,13 +32,14 @@ services:
       - ./etl:/opt/airflow/etl
       - ./airflow/airflow.db:/opt/airflow/airflow.db
       - ./airflow/logs:/opt/airflow/logs
-      - ${GOOGLE_APPLICATION_CREDENTIALS}:/run/secrets/gcp-service-account.json:ro
+      - ./gcp/service-account.json:/run/secrets/gcp-service-account.json:ro
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       PYTHONPATH: /opt/airflow
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
+
   airflow-worker:
     build:
       context: .
@@ -48,13 +50,14 @@ services:
       - ./etl:/opt/airflow/etl
       - ./airflow/airflow.db:/opt/airflow/airflow.db
       - ./airflow/logs:/opt/airflow/logs
-      - ${GOOGLE_APPLICATION_CREDENTIALS}:/run/secrets/gcp-service-account.json:ro
+      - ./gcp/service-account.json:/run/secrets/gcp-service-account.json:ro
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       PYTHONPATH: /opt/airflow
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
+
   fastapi:
     build:
       context: .
@@ -63,13 +66,13 @@ services:
       - "8000:8000"
     env_file: .env
     volumes:
-      - ${GOOGLE_APPLICATION_CREDENTIALS}:/run/secrets/gcp-service-account.json:ro
+      - ./gcp/service-account.json:/run/secrets/gcp-service-account.json:ro
       - ./ml:/app/ml
     environment:
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
-  
+
   frontend:
     build: ./frontend
     ports:

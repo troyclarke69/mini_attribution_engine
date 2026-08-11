@@ -18,6 +18,7 @@ const rawTabs = [
 ];
 
 function App() {
+  const [predictedRoas, setPredictedRoas] = useState(null);
   const [summary, setSummary] = useState(emptySummary);
   const [error, setError] = useState("");
   const [page, setPage] = useState("overview");
@@ -38,6 +39,13 @@ function App() {
       .get(`${apiBaseUrl}/metrics/summary`)
       .then((response) => setSummary(response.data))
       .catch(() => setError("Connect the API to view current attribution metrics."));
+  }, []);
+
+  useEffect(() => {
+    axios
+      .get(`${apiBaseUrl}/predict_next_day_roas`)
+      .then((response) => setPredictedRoas(response.data.predicted_next_day_roas))
+      .catch(() => setPredictedRoas(null));
   }, []);
 
   useEffect(() => {
@@ -92,7 +100,7 @@ function App() {
     <main className="shell">
       <header className="masthead">
         <div>
-          <p className="eyebrow">MARKETING INTELLIGENCE / LIVE MODEL</p>
+          <p className="eyebrow">MARKETING INTELLIGENCE</p>
           <h1>Attribution, with receipts.</h1>
           <p className="lede">Last-touch performance across every campaign in one clear view.</p>
         </div>
@@ -111,6 +119,20 @@ function App() {
       {page === "overview" && (
         <>
           <SummaryCards summary={summary} />
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">MODEL OUTPUT</p>
+                <h2>Predicted Next-Day ROAS</h2>
+              </div>
+            </div>
+
+            <div className="metric-card">
+              <p className="metric-value">
+                {predictedRoas !== null ? predictedRoas.toFixed(3) : "Loading..."}
+              </p>
+            </div>
+          </section>
           <section className="campaign-section">
             <div className="section-heading">
               <div>

@@ -18,6 +18,7 @@ def load_training_data():
 
     query = f"""
         SELECT
+            metric_date,
             spend,
             attributed_revenue,
             conversions,

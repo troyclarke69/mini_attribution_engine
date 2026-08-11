@@ -14,7 +14,6 @@ from etl.bq_extract_training_data import load_training_data
 # ---------------------------------------------------------
 # 1. Load real training data from BigQuery
 # ---------------------------------------------------------
-
 def get_training_dataframe():
     """
     Loads historical marketing metrics from BigQuery.
@@ -23,11 +22,17 @@ def get_training_dataframe():
     print("Loading training data from BigQuery...")
     df = load_training_data()
 
-    # Rename target column to match model expectations
+    # Drop rows where the target is NaN
+    df = df.dropna(subset=["next_day_roas"])
+
+    # Rename target column FIRST (keeps everything consistent)
     df = df.rename(columns={"next_day_roas": "target_next_day_roas"})
 
-    return df
+    # Rebuild X and y using the renamed column
+    X = df.drop(columns=["metric_date", "target_next_day_roas"])
+    y = df["target_next_day_roas"]
 
+    return X, y
 
 # ---------------------------------------------------------
 # 2. Split into features (X) and target (y)
@@ -38,7 +43,7 @@ def split_features_target(df):
     Splits the dataset into features (X) and target (y),
     then performs a train/test split.
     """
-    X = df.drop(columns=["target_next_day_roas"])
+    X = df.drop(columns=["metric_date", "target_next_day_roas"])
     y = df["target_next_day_roas"]
 
     return train_test_split(X, y, test_size=0.2, random_state=42)
@@ -95,13 +100,12 @@ def save_model(model, path="ml/model_roas.pkl"):
 # ---------------------------------------------------------
 # 6. Main entrypoint
 # ---------------------------------------------------------
-
 def main():
     print("Fetching training data...")
-    df = get_training_dataframe()
+    X, y = get_training_dataframe()
 
     print("Splitting into train/test...")
-    X_train, X_test, y_train, y_test = split_features_target(df)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     print("Training ROAS model...")
     model = train_roas_model(X_train, y_train)
