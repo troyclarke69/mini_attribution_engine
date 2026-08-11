@@ -43,3 +43,15 @@ h1, h2, p { margin-top: 0; } h1 { max-width: 680px; margin-bottom: 16px; font-si
 .close-button { margin-top: 16px; }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 700px) { .shell { padding: 32px 18px 60px; } .masthead { display: block; padding-bottom: 32px; } .masthead-actions { justify-items: stretch; margin-top: 20px; } .nav-pills { justify-content: center; } .status { margin-top: 24px; } h1 { letter-spacing: -2px; } .summary-grid { grid-template-columns: repeat(2, 1fr); padding-bottom: 44px; } .summary-card { min-height: 116px; padding: 16px; } .summary-card strong { margin-top: 24px; font-size: 24px; } .section-heading, .panel-header { align-items: flex-start; display: block; } .section-heading > span { display: block; margin-top: 12px; } .chart-grid { grid-template-columns: 1fr; } }
+.metric-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 600;
+}

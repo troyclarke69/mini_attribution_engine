@@ -9,6 +9,10 @@ docker compose up --build
 docker exec -it mini_attribution_engine-fastapi-1 bash
 python ml/train_roas_model.py
 
+train:
+python -m ml.train_roas_model
+inspect:
+
 
 
 
