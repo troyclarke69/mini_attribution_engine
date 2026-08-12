@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routers.health import router as health_router
 from api.routers.metrics import raw_router, router as metrics_router
 from api.routers.ml_roas import router as ml_roas_router
+from api.routers.anomalies import router as anomalies_router
 from etl.bq import get_bq_client
 import joblib
 from ml.data_loader import get_latest_feature_row
@@ -53,6 +54,7 @@ app.include_router(metrics_router)
 app.include_router(raw_router)
 app.include_router(health_router)
 app.include_router(ml_roas_router)
+app.include_router(anomalies_router)
 
 @app.get("/")
 def root() -> dict[str, str]:
