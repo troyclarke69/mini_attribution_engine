@@ -8,7 +8,7 @@ import LineChart from "./components/charts/LineChart";
 import DualAxisChart from "./components/charts/DualAxisChart";
 import RawTable from "./components/tables/RawTable";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const emptySummary = { spend: 0, attributed_revenue: 0, roas: 0, cac: 0, conversions: 0, campaigns: [] };
 const rawTabs = [
   { key: "ad-spend", label: "Ad Spend" },
