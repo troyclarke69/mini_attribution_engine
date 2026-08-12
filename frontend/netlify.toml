@@ -1,5 +1,5 @@
 [[redirects]]
   from = "/api/*"
-  to = "https://mini-attribution-engine.fly.dev/api/v1/:splat"
+  to = "https://mini-attribution-engine.fly.dev/api/:splat"
   status = 200
   force = true
