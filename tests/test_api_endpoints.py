@@ -116,6 +116,14 @@ def test_roas_trend_endpoint(monkeypatch):
     assert response.json()[0]["roas"] == 4.5
 
 
+def test_anomalies_roas_endpoint(monkeypatch):
+    monkeypatch.setattr("api.routers.anomalies.get_bq_client", lambda: FakeClient())
+    response = client.get("/anomalies/roas?campaign_id=camp-1")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+    assert response.json()[0]["metric"] == "roas"
+
+
 def test_raw_orders_endpoint(monkeypatch):
     monkeypatch.setattr("api.routers.metrics.get_bq_client", lambda: FakeClient())
     response = client.get("/raw/orders?customer_id=customer-1&limit=10&offset=0")

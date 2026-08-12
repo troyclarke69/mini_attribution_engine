@@ -21,6 +21,8 @@ function App() {
   const [predictedRoas, setPredictedRoas] = useState(null);
   const [summary, setSummary] = useState(emptySummary);
   const [error, setError] = useState("");
+  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
+  const [isPredictionLoading, setIsPredictionLoading] = useState(true);
   const [page, setPage] = useState("overview");
   const [rawTab, setRawTab] = useState("ad-spend");
   const [filters, setFilters] = useState({ campaign_id: "", customer_id: "", date_from: "", date_to: "" });
@@ -31,6 +33,8 @@ function App() {
   const [cacData, setCacData] = useState([]);
   const [conversionData, setConversionData] = useState([]);
   const [spendRevenueData, setSpendRevenueData] = useState([]);
+  const [anomalyAlerts, setAnomalyAlerts] = useState([]);
+  const [isChartsLoading, setIsChartsLoading] = useState(false);
 
   const pageTitle = useMemo(() => ({ overview: "Overview", "raw-data": "Raw Data", charts: "Charts & Trends" }[page]), [page]);
 
@@ -38,14 +42,16 @@ function App() {
     axios
       .get(`${apiBaseUrl}/metrics/summary`)
       .then((response) => setSummary(response.data))
-      .catch(() => setError("Connect the API to view current attribution metrics."));
+      .catch(() => setError("Connect the API to view current attribution metrics."))
+      .finally(() => setIsSummaryLoading(false));
   }, []);
 
   useEffect(() => {
     axios
       .get(`${apiBaseUrl}/predict_next_day_roas`)
       .then((response) => setPredictedRoas(response.data.predicted_next_day_roas))
-      .catch(() => setPredictedRoas(null));
+      .catch(() => setPredictedRoas(null))
+      .finally(() => setIsPredictionLoading(false));
   }, []);
 
   useEffect(() => {
@@ -69,16 +75,23 @@ function App() {
       if (trendState.campaign_id) params.set("campaign_id", trendState.campaign_id);
       if (trendState.date_from) params.set("date_from", trendState.date_from);
       if (trendState.date_to) params.set("date_to", trendState.date_to);
-      return `${apiBaseUrl}/metrics/${path}?${params.toString()}`;
+      return `${apiBaseUrl}/${path}?${params.toString()}`;
     };
 
+    const anomalyParams = new URLSearchParams();
+    if (trendState.campaign_id) anomalyParams.set("campaign_id", trendState.campaign_id);
+    if (trendState.date_from) anomalyParams.set("date_from", trendState.date_from);
+    if (trendState.date_to) anomalyParams.set("date_to", trendState.date_to);
+
+    setIsChartsLoading(true);
     Promise.all([
-      axios.get(buildParams("trend/roas")),
-      axios.get(buildParams("trend/cac")),
-      axios.get(buildParams("trend/conversions")),
-      axios.get(buildParams("trend/spend-revenue")),
+      axios.get(buildParams("metrics/trend/roas")),
+      axios.get(buildParams("metrics/trend/cac")),
+      axios.get(buildParams("metrics/trend/conversions")),
+      axios.get(buildParams("metrics/trend/spend-revenue")),
+      axios.get(`${apiBaseUrl}/anomalies/roas?${anomalyParams.toString()}`),
     ])
-      .then(([roasRes, cacRes, conversionRes, spendRevenueRes]) => {
+      .then(([roasRes, cacRes, conversionRes, spendRevenueRes, anomaliesRes]) => {
         setRoasData((roasRes.data || []).map((item) => ({ ...item, roas: Number(item.roas) })));
         setCacData((cacRes.data || []).map((item) => ({ ...item, cac: Number(item.cac) })));
         setConversionData((conversionRes.data || []).map((item) => ({ ...item, conversions: Number(item.conversions) })));
@@ -87,14 +100,33 @@ function App() {
           spend: Number(item.spend),
           attributed_revenue: Number(item.attributed_revenue),
         })));
+        setAnomalyAlerts((anomaliesRes.data || []).slice(-5));
       })
       .catch(() => {
         setRoasData([]);
         setCacData([]);
         setConversionData([]);
         setSpendRevenueData([]);
+        setAnomalyAlerts([]);
+      })
+      .finally(() => {
+        setIsChartsLoading(false);
       });
   }, [page, trendState]);
+
+  if (isSummaryLoading || isPredictionLoading) {
+    return (
+      <main className="shell">
+        <div className="startup-loading">
+          <div className="spinner" aria-hidden="true" />
+          <div>
+            <h2>Loading the attribution dashboard…</h2>
+            <p>Please wait while we fetch campaign metrics and model output.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="shell">
@@ -217,12 +249,44 @@ function App() {
             />
           </div>
 
-          <div className="chart-grid">
-            <LineChart data={roasData} title="ROAS" dataKey="roas" color="#1d6f5c" />
-            <LineChart data={cacData} title="CAC" dataKey="cac" color="#c77d29" />
-            <LineChart data={conversionData} title="Conversions" dataKey="conversions" color="#2f6dbb" />
-            <DualAxisChart data={spendRevenueData} />
-          </div>
+          {isChartsLoading ? (
+            <div className="panel charts-loading">
+              <div className="spinner" aria-hidden="true" />
+              <p>Loading charts and anomaly signals...</p>
+            </div>
+          ) : (
+            <>
+              <div className="chart-grid">
+                <LineChart data={roasData} title="ROAS" dataKey="roas" color="#1d6f5c" />
+                <LineChart data={cacData} title="CAC" dataKey="cac" color="#c77d29" />
+                <LineChart data={conversionData} title="Conversions" dataKey="conversions" color="#2f6dbb" />
+                <DualAxisChart data={spendRevenueData} />
+              </div>
+
+              <section className="panel anomaly-panel">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">ANOMALY SUMMARY</p>
+                    <h2>Recent ROAS alerts</h2>
+                  </div>
+                </div>
+                <div className="anomaly-list">
+                  {anomalyAlerts.length === 0 ? (
+                    <p className="empty-state">No recent ROAS anomalies detected.</p>
+                  ) : (
+                    anomalyAlerts.map((alert) => (
+                      <div key={`${alert.date}-${alert.metric}`} className={`anomaly-row severity-${alert.severity}`}>
+                        <div>
+                          <strong>{alert.date}</strong> • {alert.metric.toUpperCase()} = {alert.value.toFixed(3)}
+                        </div>
+                        <span className="badge">{alert.severity}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
+            </>
+          )}
         </section>
       )}
     </main>

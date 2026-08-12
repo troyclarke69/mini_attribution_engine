@@ -7,14 +7,13 @@ So run in docker bash:
 
 docker compose up --build
 docker exec -it mini_attribution_engine-fastapi-1 bash
-python ml/train_roas_model.py
-
+**In docker bash:**
 train:
 python -m ml.train_roas_model
 inspect:
+python -m ml.inspect_features_importance
 
-
-
+* ****************************************************************************
 
 A demo pipeline that ingests mock ads, clickstream events, and orders, stores normalized facts in BigQuery, applies seven-day last-touch attribution, and exposes campaign performance through FastAPI and a React dashboard.
 
@@ -88,6 +87,8 @@ The main services are:
 - `GET /metrics/trend/cac` returns a daily CAC series
 - `GET /metrics/trend/conversions` returns a daily conversion series
 - `GET /metrics/trend/spend-revenue` returns daily spend and attributed revenue values
+- `GET /anomalies/roas` returns ROAS anomaly alerts based on historical z-score, MAD, IQR, and percent-change scoring
+- `GET /anomalies/cac` returns CAC anomaly alerts using the same detection logic
 
 ### Raw drill-down endpoints
 
