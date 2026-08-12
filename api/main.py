@@ -1,4 +1,4 @@
-"""FastAPI application entrypoint."""
+"""FastAPI entrypoint."""
 import logging
 import base64
 import os
