@@ -77,6 +77,10 @@ The main services are:
 - FastAPI docs: `http://localhost:8000/docs`
 - Airflow UI: `http://localhost:8080`
 
+Deployments:
+Fly: https://mini-attribution-engine.fly.dev
+Netlify: https://miniattributionengine.netlify.dev
+
 ## API endpoints
 
 ### Summary and campaign metrics

@@ -72,12 +72,11 @@ services:
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
-
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: production
+      args:
+        VITE_API_BASE_URL: "https://mini-attribution-engine.fly.dev"
     ports:
       - "3000:80"
-    environment:
-      VITE_API_BASE_URL: "http://fastapi:8000"
-    depends_on:
-      - fastapi
