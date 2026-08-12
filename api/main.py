@@ -1,8 +1,17 @@
 """FastAPI application entrypoint."""
 import logging
+import base64
+import os
+
+creds_b64 = os.getenv("GCP_CREDS")
+creds_json = base64.b64decode(creds_b64).decode("utf-8")
+
+os.makedirs("/app/gcp", exist_ok=True)
+with open("/app/gcp/gcp-service-account.json", "w") as f:
+    f.write(creds_json)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from api.routers.health import router as health_router
 from api.routers.metrics import raw_router, router as metrics_router
 from api.routers.ml_roas import router as ml_roas_router
