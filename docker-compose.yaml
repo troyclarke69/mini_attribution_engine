@@ -66,12 +66,11 @@ services:
       - "8000:8000"
     env_file: .env
     volumes:
-      - ./gcp/service-account.json:/run/secrets/gcp-service-account.json:ro
       - ./ml:/app/ml
     environment:
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
-      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
+      GCP_CREDS: ${GCP_CREDS}
   frontend:
     build:
       context: ./frontend

@@ -1,19 +1,5 @@
 # Mini Marketing Attribution Engine
-
-# IMPORTANT NOTES ON ML
-
-* Training must be done in docker - local is not set up (missing google bigquery & python deps for creds, etc) *
-So run in docker bash:
-
-docker compose up --build
-docker exec -it mini_attribution_engine-fastapi-1 bash
-**In docker bash:**
-train:
-python -m ml.train_roas_model
-inspect:
-python -m ml.inspect_features_importance
-
-* ****************************************************************************
+***********************************
 
 A demo pipeline that ingests mock ads, clickstream events, and orders, stores normalized facts in BigQuery, applies seven-day last-touch attribution, and exposes campaign performance through FastAPI and a React dashboard.
 
@@ -187,3 +173,72 @@ kubectl apply -f k8s/
 ```
 
 The deployment uses two replicas, a ClusterIP service, an optional ingress, a ConfigMap, and a CPU-based HPA. Airflow remains in Docker Compose.
+
+
+
+
+$creds = Get-Content .\gcp\service-account.json -Raw
+$creds_b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($creds))
+
+# IMPORTANT NOTES ON ML DEV/TESTING
+
+* Training must be done in docker - local is not set up (missing google bigquery & python deps for creds, etc) *
+
+bash:
+docker compose up --build
+docker exec -it mini_attribution_engine-fastapi-1 bash
+
+* AFTER RETRAIN - Validate the output
+python - <<EOF
+from ml.data_loader import get_latest_feature_row
+df = get_latest_feature_row()
+print(df)
+EOF
+
+* PREDICTION
+python - <<EOF
+from ml.data_loader import get_latest_feature_row
+import joblib
+
+FEATURE_ORDER = [
+    "spend",
+    "attributed_revenue",
+    "conversions",
+    "cac",
+    "roas",
+    "rolling_7d_roas",
+    "rolling_7d_spend",
+    "rolling_7d_conversions",
+    "rolling_7d_volatility",
+]
+
+row = get_latest_feature_row()
+X = row.drop(columns=["metric_date", "target_next_day_roas"])
+X = X[FEATURE_ORDER]
+
+model = joblib.load("ml/model_roas.pkl")
+print("Prediction:", model.predict(X)[0])
+EOF
+
+* Inspect Feature table
+python - <<EOF
+from etl.bq import get_bq_client
+client = get_bq_client()
+
+query = """
+SELECT *
+FROM `thub-10b72.marketing_demo.fact_campaign_metrics_features`
+ORDER BY metric_date DESC
+LIMIT 5
+"""
+
+df = client.query(query).to_dataframe()
+print(df)
+EOF
+
+
+**In docker bash:**
+train:
+python -m ml.train_roas_model
+inspect:
+python -m ml.inspect_features_importance

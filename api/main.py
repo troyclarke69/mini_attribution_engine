@@ -7,8 +7,9 @@ creds_b64 = os.getenv("GCP_CREDS")
 creds_json = base64.b64decode(creds_b64).decode("utf-8")
 
 os.makedirs("/app/gcp", exist_ok=True)
-with open("/app/gcp/gcp-service-account.json", "w") as f:
+with open("/app/gcp/service-account.json", "w") as f:
     f.write(creds_json)
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/app/gcp/service-account.json"
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

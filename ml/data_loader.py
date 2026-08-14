@@ -1,6 +1,9 @@
 import os
 import pandas as pd
-from google.cloud import bigquery
+
+# IMPORTANT: use the unified BigQuery client
+from etl.bq import get_bq_client
+
 
 def load_training_data():
     """
@@ -17,7 +20,8 @@ def load_training_data():
             f"Got project_id={project_id}, dataset={dataset}"
         )
 
-    client = bigquery.Client()
+    # FIXED: use authenticated client
+    client = get_bq_client()
 
     table = f"{project_id}.{dataset}.fact_campaign_metrics_features"
 
@@ -79,7 +83,8 @@ def get_latest_feature_row():
             f"Got project_id={project_id}, dataset={dataset}"
         )
 
-    client = bigquery.Client()
+    # FIXED: use authenticated client
+    client = get_bq_client()
 
     table = f"{project_id}.{dataset}.fact_campaign_metrics_features"
 
@@ -98,10 +103,11 @@ def get_latest_feature_row():
             IFNULL(next_day_roas, 0) AS next_day_roas
         FROM `{table}`
         WHERE next_day_roas IS NOT NULL
-        ORDER BY metric_date ASC
+        ORDER BY metric_date DESC
         LIMIT 1
     """
-    df = client.query(query, location="US").to_dataframe()
+
+    df = client.query(query).to_dataframe()
 
     df = df.rename(columns={"next_day_roas": "target_next_day_roas"})
 

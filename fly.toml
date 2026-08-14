@@ -3,7 +3,7 @@ primary_region = 'yyz'
 
 [build]
   dockerfile = "api/Dockerfile"
-  context = "api/"
+  context = "api"
 
 [http_service]
   internal_port = 8000
@@ -22,4 +22,4 @@ primary_region = 'yyz'
 [env]
   GCP_PROJECT_ID = "thub-10b72"
   BQ_DATASET = "marketing_demo"
-  GOOGLE_APPLICATION_CREDENTIALS = "/app/gcp/gcp-service-account.json"
+  GOOGLE_APPLICATION_CREDENTIALS = "/app/gcp/service-account.json"

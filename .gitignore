@@ -8,4 +8,9 @@ dist/
 thub-10b72-f33d90a0835c.json
 *.log
 SIDENOTES.md
+# Google Cloud credentials
+gcp/
+service-account.json
+*.key.json
+*.json
 
