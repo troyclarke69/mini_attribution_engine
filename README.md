@@ -67,6 +67,10 @@ Deployments:
 Fly: https://mini-attribution-engine.fly.dev
 Netlify: https://miniattributionengine.netlify.dev
 
+Deployments:
+Fly: https://mini-attribution-engine.fly.dev
+Netlify: https://miniattributionengine.netlify.dev
+
 ## API endpoints
 
 ### Summary and campaign metrics
@@ -77,6 +81,8 @@ Netlify: https://miniattributionengine.netlify.dev
 - `GET /metrics/trend/cac` returns a daily CAC series
 - `GET /metrics/trend/conversions` returns a daily conversion series
 - `GET /metrics/trend/spend-revenue` returns daily spend and attributed revenue values
+- `GET /anomalies/roas` returns ROAS anomaly alerts based on historical z-score, MAD, IQR, and percent-change scoring
+- `GET /anomalies/cac` returns CAC anomaly alerts using the same detection logic
 - `GET /anomalies/roas` returns ROAS anomaly alerts based on historical z-score, MAD, IQR, and percent-change scoring
 - `GET /anomalies/cac` returns CAC anomaly alerts using the same detection logic
 
