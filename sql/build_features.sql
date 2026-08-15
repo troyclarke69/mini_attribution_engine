@@ -7,7 +7,7 @@ WITH base AS (
     conversions,
     cac,
     roas
-  FROM `thub-10b72.marketing_demo.campaign_metrics`
+  FROM `thub-10b72.marketing_demo.fact_campaign_metrics`
 ),
 
 events AS (
