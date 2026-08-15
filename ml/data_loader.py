@@ -115,3 +115,51 @@ def get_latest_feature_row():
     print("Columns:", df.columns.tolist())
 
     return df
+
+
+def get_latest_feature_row_for_prediction():
+    """
+    Fetches the single most recent feature row for live prediction.
+
+    Unlike get_latest_feature_row() above, this does NOT filter on
+    next_day_roas being known. That column is tomorrow's target, so the
+    truly-latest row can never have it populated - filtering on it meant
+    live serving was silently falling back to an older row every time,
+    regardless of how fresh the pipeline actually was.
+    """
+
+    project_id = os.getenv("GCP_PROJECT_ID")
+    dataset = os.getenv("BQ_DATASET")
+
+    if not project_id or not dataset:
+        raise ValueError(
+            f"Missing GCP_PROJECT_ID or BQ_DATASET. "
+            f"Got project_id={project_id}, dataset={dataset}"
+        )
+
+    client = get_bq_client()
+
+    table = f"{project_id}.{dataset}.fact_campaign_metrics_features"
+
+    query = f"""
+        SELECT
+            metric_date,
+            IFNULL(spend, 0) AS spend,
+            IFNULL(conversions, 0) AS conversions,
+            IFNULL(roas, 0) AS roas,
+            IFNULL(rolling_7d_spend, 0) AS rolling_7d_spend,
+            IFNULL(rolling_7d_roas, 0) AS rolling_7d_roas,
+            IFNULL(rolling_7d_conversions, 0) AS rolling_7d_conversions,
+            IFNULL(rolling_7d_volatility, 0) AS rolling_7d_volatility,
+            IFNULL(cac, 0) AS cac,
+            IFNULL(attributed_revenue, 0) AS attributed_revenue
+        FROM `{table}`
+        ORDER BY metric_date DESC
+        LIMIT 1
+    """
+
+    df = client.query(query).to_dataframe()
+
+    print("Loaded prediction feature row for:", df["metric_date"].iloc[0] if len(df) else "N/A")
+
+    return df

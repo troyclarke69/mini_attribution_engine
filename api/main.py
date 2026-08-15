@@ -23,7 +23,7 @@ from api.routers.ml_roas import router as ml_roas_router
 from api.routers.anomalies import router as anomalies_router
 
 from etl.bq import get_bq_client
-from ml.data_loader import get_latest_feature_row
+from ml.data_loader import get_latest_feature_row_for_prediction
 from ml.model_store import get_model
 
 # --- App setup ---
@@ -98,10 +98,8 @@ def root() -> dict[str, str]:
 def predict_next_day_roas():
     model = get_model()
 
-    df = get_latest_feature_row()
-
-    X = df.drop(columns=["metric_date", "target_next_day_roas"])
-    X = X[FEATURE_ORDER]
+    df = get_latest_feature_row_for_prediction()
+    X = df[FEATURE_ORDER]
 
     pred = model.predict(X)[0]
     return {"predicted_next_day_roas": float(pred)}
