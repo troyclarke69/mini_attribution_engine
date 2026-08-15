@@ -1,4 +1,5 @@
 # Mini Marketing Attribution Engine
+**************************************************
 
 A demo pipeline that ingests mock ads, clickstream events, and orders, stores normalized facts in BigQuery, applies seven-day last-touch attribution, and exposes campaign performance through FastAPI and a React dashboard.
 
@@ -36,7 +37,7 @@ This keeps the original attribution architecture intact while making the data ea
 
 ## Local setup
 
-1. Copy `.env.example` to `.env` and set your project ID and Google credentials path.
+1. Copy `.env.example` to `.env`, fill in `GCP_PROJECT_ID`, and set `GCP_CREDS` (see [Credentials](#credentials) below).
 2. Create the `marketing_demo` dataset in BigQuery.
 3. Apply the schema definitions in `bq/schema/`.
 4. Initialize Airflow metadata before starting the stack:
@@ -66,7 +67,31 @@ Deployments:
 Fly: https://mini-attribution-engine.fly.dev
 Netlify: https://miniattributionengine.netlify.dev
 
-## API endpoints **************************************************
+## Credentials
+
+Every service that talks to BigQuery - the FastAPI app, Airflow's ingestion
+DAGs, and the local ML training/inspection scripts under `ml/` - authenticates
+through a single environment variable, `GCP_CREDS`: the service account JSON,
+base64-encoded, read from `.env` (or from a Fly secret in production). Nothing
+reads `GOOGLE_APPLICATION_CREDENTIALS` or a mounted key file directly anymore
+(see the Changelog at the bottom for why that changed).
+
+To generate the value from a service account key file:
+
+```powershell
+$creds = Get-Content .\gcp\service-account.json -Raw
+$creds_b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($creds))
+Write-Output $creds_b64
+```
+
+Paste the result into `.env` as `GCP_CREDS=<value>`. For the Fly deployment,
+set the same variable as a secret instead of committing it:
+
+```powershell
+fly secrets set GCP_CREDS="<value>"
+```
+
+## API endpoints
 
 ### Summary and campaign metrics
 
@@ -243,3 +268,38 @@ train:
 python -m ml.train_roas_model
 inspect:
 python -m ml.inspect_features_importance
+## Changelog
+
+### 2026-08-15
+
+- Fixed the Fly deploy build failure caused by a stale `context = "api"` in
+  `fly.toml` (a no-op that masked a mismatched `.dockerignore`/Dockerfile
+  layout after a credential reorg moved files around).
+- Fixed the Airflow Docker Compose build failure (`.dockerignore` was
+  excluding `dags/`/`airflow/`, which the Airflow Dockerfile needs since it
+  shares the root build context).
+- Fixed the "site offline until refresh" cold start: the ROAS model and
+  BigQuery client were loaded eagerly at import time (and the model pickle
+  was loaded twice), blocking `uvicorn` from opening its socket. Both are
+  now lazily loaded and cached, with a background warm-up on startup.
+- Added 180-day partition expiration to the BigQuery fact tables.
+- Fixed the ROAS prediction card getting stuck on "Loading..." then showing
+  "0.000": added an explicit error state with a Retry button instead of
+  relying on a browser refresh, and moved the fetch to only happen when the
+  Charts & Trends tab is opened.
+- Unified all BigQuery authentication (FastAPI, Airflow DAGs, local ML
+  scripts) onto a single `GCP_CREDS` base64 environment variable, replacing
+  the old `GOOGLE_APPLICATION_CREDENTIALS` mounted-key-file pattern. Removed
+  the now-dead code and config left over from before that change.
+- Fixed duplicate/inflated BigQuery data: `fact_attribution` and
+  `fact_campaign_metrics` are full recomputes each run, but were being
+  appended instead of replaced. Both now use `WRITE_TRUNCATE`.
+- Fixed the ROAS prediction being stuck at a stale value: the query backing
+  it filtered on `next_day_roas IS NOT NULL`, which the truly-latest row can
+  never satisfy (tomorrow hasn't happened yet). Added a dedicated query for
+  live serving that doesn't filter on the target column.
+- Fixed charts and anomaly detection rendering as undeduplicated,
+  unaggregated "messy blobs": multiple campaigns' individual rows for the
+  same date were being plotted/analyzed as separate points instead of one
+  aggregated line per date. Also fixed a bug where the spend/revenue trend
+  silently dropped the revenue series entirely.
