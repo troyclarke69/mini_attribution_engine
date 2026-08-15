@@ -4,9 +4,8 @@ from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
-
 from etl.attribution import compute_summary_metrics, run_last_touch_attribution, write_attribution_results
+from etl.bq import get_bq_client
 
 
 def _wait_for_sources_fresh() -> None:
@@ -17,6 +16,11 @@ def _wait_for_sources_fresh() -> None:
 def _write_attribution(**context: object) -> None:
     """Persist the attribution results for this run."""
     write_attribution_results()
+
+
+def _update_attribution_freshness() -> None:
+    """Lightweight BigQuery connectivity check using the project's shared auth."""
+    get_bq_client().query("SELECT CURRENT_TIMESTAMP() AS updated_at").result()
 
 
 with DAG(
@@ -37,8 +41,7 @@ with DAG(
         ),
     )
     write_task = PythonOperator(task_id="write_attribution_to_bq", python_callable=_write_attribution)
-    freshness_task = BigQueryInsertJobOperator(
-        task_id="update_attribution_freshness",
-        configuration={"query": {"query": "SELECT CURRENT_TIMESTAMP() AS updated_at", "useLegacySql": False}},
+    freshness_task = PythonOperator(
+        task_id="update_attribution_freshness", python_callable=_update_attribution_freshness
     )
     wait_task >> attribution_task >> metrics_task >> write_task >> freshness_task

@@ -8,16 +8,15 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from dotenv import load_dotenv
-from google.cloud import bigquery
 
-from etl.bq import DATASET_ID, PROJECT_ID, update_freshness, write_attribution, write_campaign_metrics
+from etl.bq import DATASET_ID, PROJECT_ID, get_bq_client, update_freshness, write_attribution, write_campaign_metrics
 
 load_dotenv()
 LOGGER = logging.getLogger(__name__)
 
 def run_last_touch_attribution() -> list[dict[str, Any]]:
     """Attribute each order to its latest customer event within seven days."""
-    client = bigquery.Client(project=PROJECT_ID)
+    client = get_bq_client()
 
     query = f"""
     WITH ranked_events AS (
@@ -64,7 +63,7 @@ def run_last_touch_attribution() -> list[dict[str, Any]]:
 
 def compute_summary_metrics(attribution_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Compute spend, revenue, ROAS, and CAC by campaign from BigQuery."""
-    client = bigquery.Client(project=PROJECT_ID)
+    client = get_bq_client()
 
     query = f"""
     SELECT
