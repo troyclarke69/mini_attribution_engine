@@ -15,3 +15,4 @@ service-account.json
 *.json
 
 temp_creds.txt
+airflow/airflow.db
