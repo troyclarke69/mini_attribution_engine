@@ -1,0 +1,36 @@
+# Normalize line endings so the repo stores (and diffs) text files consistently
+# regardless of which OS/editor touched them last. Without this, Windows tools
+# can silently flip files to CRLF, which makes every line show as "changed" in
+# git diff/status even when nothing meaningful was edited.
+* text=auto eol=lf
+
+# Common text types - explicit for clarity (redundant with text=auto above)
+*.py       text eol=lf
+*.js       text eol=lf
+*.jsx      text eol=lf
+*.ts       text eol=lf
+*.tsx      text eol=lf
+*.json     text eol=lf
+*.md       text eol=lf
+*.sql      text eol=lf
+*.yaml     text eol=lf
+*.yml      text eol=lf
+*.toml     text eol=lf
+*.sh       text eol=lf
+*.example  text eol=lf
+Dockerfile text eol=lf
+
+# Windows-native scripts should keep CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files - never touch or diff these
+*.pkl  binary
+*.db   binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
