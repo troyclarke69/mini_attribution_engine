@@ -8,4 +8,7 @@ CREATE TABLE IF NOT EXISTS `thub-10b72.marketing_demo.fact_ad_spend` (
   inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
 )
 PARTITION BY date
-CLUSTER BY campaign_id;
+CLUSTER BY campaign_id
+OPTIONS (
+  partition_expiration_days = 180
+);

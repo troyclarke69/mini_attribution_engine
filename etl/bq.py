@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 import os
 import json
@@ -25,6 +26,7 @@ DATASET_ID = os.getenv("BQ_DATASET", "marketing_demo")
 # ---------------------------------------------------------------------------
 #  FIXED: Unified credential loader using GCP_CREDS (base64)
 # ---------------------------------------------------------------------------
+@functools.lru_cache(maxsize=1)
 def get_bq_client() -> bigquery.Client:
     """Return a BigQuery client using explicit service-account credentials."""
 

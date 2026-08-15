@@ -9,4 +9,7 @@ CREATE TABLE IF NOT EXISTS `thub-10b72.marketing_demo.fact_events` (
   inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
 )
 PARTITION BY event_date
-CLUSTER BY campaign_id, customer_id;
+CLUSTER BY campaign_id, customer_id
+OPTIONS (
+  partition_expiration_days = 180
+);

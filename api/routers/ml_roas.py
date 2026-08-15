@@ -1,22 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-import joblib
-import os
 import numpy as np
 
-# ---------------------------------------------------------
-# Load model once at startup
-# ---------------------------------------------------------
-
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "ml", "model_roas.pkl")
-
-try:
-    model = joblib.load(MODEL_PATH)
-    print(f"Loaded ROAS model from {MODEL_PATH}")
-except Exception as e:
-    print(f"Failed to load ROAS model: {e}")
-    model = None
-
+from ml.model_store import get_model
 
 # ---------------------------------------------------------
 # Request schema
@@ -56,7 +42,10 @@ def predict_roas(payload: ROASPredictionRequest):
     Predict next-day ROAS using the trained RandomForest model.
     """
 
-    if model is None:
+    try:
+        model = get_model()
+    except Exception as e:
+        print(f"Failed to load ROAS model: {e}")
         return ROASPredictionResponse(predicted_next_day_roas=-1.0)
 
     # Convert request to model input

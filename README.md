@@ -1,5 +1,4 @@
 # Mini Marketing Attribution Engine
-***********************************
 
 A demo pipeline that ingests mock ads, clickstream events, and orders, stores normalized facts in BigQuery, applies seven-day last-touch attribution, and exposes campaign performance through FastAPI and a React dashboard.
 
@@ -67,11 +66,7 @@ Deployments:
 Fly: https://mini-attribution-engine.fly.dev
 Netlify: https://miniattributionengine.netlify.dev
 
-Deployments:
-Fly: https://mini-attribution-engine.fly.dev
-Netlify: https://miniattributionengine.netlify.dev
-
-## API endpoints
+## API endpoints **************************************************
 
 ### Summary and campaign metrics
 

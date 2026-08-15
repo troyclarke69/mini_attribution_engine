@@ -8,4 +8,7 @@ CREATE TABLE IF NOT EXISTS `thub-10b72.marketing_demo.fact_orders` (
   inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
 )
 PARTITION BY order_date
-CLUSTER BY customer_id;
+CLUSTER BY customer_id
+OPTIONS (
+  partition_expiration_days = 180
+);

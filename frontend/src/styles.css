@@ -72,3 +72,6 @@ h1, h2, p { margin-top: 0; } h1 { max-width: 680px; margin-bottom: 16px; font-si
   font-size: 2rem;
   font-weight: 600;
 }
+
+.prediction-error { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.prediction-error .notice { margin: 0; padding: 10px 14px; }

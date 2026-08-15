@@ -23,6 +23,7 @@ function App() {
   const [error, setError] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [isPredictionLoading, setIsPredictionLoading] = useState(true);
+  const [predictionError, setPredictionError] = useState(false);
   const [page, setPage] = useState("overview");
   const [rawTab, setRawTab] = useState("ad-spend");
   const [filters, setFilters] = useState({ campaign_id: "", customer_id: "", date_from: "", date_to: "" });
@@ -46,13 +47,26 @@ function App() {
       .finally(() => setIsSummaryLoading(false));
   }, []);
 
-  useEffect(() => {
+  const fetchPrediction = () => {
+    setIsPredictionLoading(true);
+    setPredictionError(false);
     axios
       .get(`${apiBaseUrl}/predict_next_day_roas`)
       .then((response) => setPredictedRoas(response.data.predicted_next_day_roas))
-      .catch(() => setPredictedRoas(null))
+      .catch(() => setPredictionError(true))
       .finally(() => setIsPredictionLoading(false));
-  }, []);
+  };
+
+  // Fetched from the "Charts & Trends" tab rather than on initial dashboard
+  // load: the model + BigQuery client warm up in the background as soon as
+  // the app boots (see api/main.py's lifespan handler), so by the time a
+  // visitor actually clicks into this tab there's a much better chance
+  // it's already warm - and either way, it no longer blocks or delays the
+  // rest of the dashboard.
+  useEffect(() => {
+    if (page !== "charts") return;
+    fetchPrediction();
+  }, [page]);
 
   useEffect(() => {
     if (page !== "raw-data") return;
@@ -114,14 +128,14 @@ function App() {
       });
   }, [page, trendState]);
 
-  if (isSummaryLoading || isPredictionLoading) {
+  if (isSummaryLoading) {
     return (
       <main className="shell">
         <div className="startup-loading">
           <div className="spinner" aria-hidden="true" />
           <div>
             <h2>Loading the attribution dashboard…</h2>
-            <p>Please wait while we fetch campaign metrics and model output.</p>
+            <p>Please wait while we fetch campaign metrics.</p>
           </div>
         </div>
       </main>
@@ -151,20 +165,6 @@ function App() {
       {page === "overview" && (
         <>
           <SummaryCards summary={summary} />
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">MODEL OUTPUT</p>
-                <h2>Predicted Next-Day ROAS</h2>
-              </div>
-            </div>
-
-            <div className="metric-card">
-              <p className="metric-value">
-                {predictedRoas !== null ? predictedRoas.toFixed(3) : "Loading..."}
-              </p>
-            </div>
-          </section>
           <section className="campaign-section">
             <div className="section-heading">
               <div>
@@ -248,6 +248,28 @@ function App() {
               onToChange={(date_to) => setTrendState((current) => ({ ...current, date_to }))}
             />
           </div>
+
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">MODEL OUTPUT</p>
+                <h2>Predicted Next-Day ROAS</h2>
+              </div>
+            </div>
+
+            <div className="metric-card">
+              {isPredictionLoading ? (
+                <p className="metric-value">Loading...</p>
+              ) : predictionError ? (
+                <div className="prediction-error">
+                  <p className="notice">Unable to load prediction - retry.</p>
+                  <button className="inline-button" onClick={fetchPrediction}>Retry</button>
+                </div>
+              ) : (
+                <p className="metric-value">{predictedRoas !== null ? predictedRoas.toFixed(3) : "—"}</p>
+              )}
+            </div>
+          </section>
 
           {isChartsLoading ? (
             <div className="panel charts-loading">

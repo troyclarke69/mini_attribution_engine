@@ -1,7 +1,9 @@
 """FastAPI entrypoint."""
+import asyncio
 import logging
 import base64
 import os
+from contextlib import asynccontextmanager
 
 # --- GCP Credentials (Fly + local Docker Compose) ---
 creds_b64 = os.getenv("GCP_CREDS")
@@ -21,16 +23,37 @@ from api.routers.ml_roas import router as ml_roas_router
 from api.routers.anomalies import router as anomalies_router
 
 from etl.bq import get_bq_client
-import joblib
 from ml.data_loader import get_latest_feature_row
+from ml.model_store import get_model
 
 # --- App setup ---
 logging.basicConfig(level=logging.INFO)
-app = FastAPI(title="Mini Marketing Attribution Engine", version="1.0.0")
+LOGGER = logging.getLogger(__name__)
 
-# --- Load model ---
-model = joblib.load("ml/model_roas.pkl")
-print("MODEL FEATURES:", model.feature_names_in_)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Kick off the expensive first-use work (loading the 20MB model pickle,
+    # constructing the BigQuery client) in background threads as soon as
+    # uvicorn has opened its listening socket, instead of leaving it to
+    # whichever unlucky request happens to be first. This runs *after* the
+    # socket is bound (so Fly's cold-start reachability check still passes
+    # immediately) but *before* most real traffic arrives, so the first
+    # /predict_next_day_roas call after a cold start doesn't have to pay
+    # ~5-10s of joblib/BigQuery setup cost inline and risk timing out.
+    async def _warm_up():
+        try:
+            await asyncio.to_thread(get_model)
+            await asyncio.to_thread(get_bq_client)
+            LOGGER.info("Warm-up complete: model and BigQuery client are ready")
+        except Exception:
+            LOGGER.exception("Warm-up failed; will fall back to lazy load on first request")
+
+    asyncio.create_task(_warm_up())
+    yield
+
+
+app = FastAPI(title="Mini Marketing Attribution Engine", version="1.0.0", lifespan=lifespan)
 
 FEATURE_ORDER = [
     "spend",
@@ -58,12 +81,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- BigQuery client ---
-try:
-    bq_client = get_bq_client()
-except Exception:
-    bq_client = None
-
 # --- Routers ---
 app.include_router(metrics_router)
 app.include_router(raw_router)
@@ -79,6 +96,8 @@ def root() -> dict[str, str]:
 # --- Prediction endpoint ---
 @app.get("/predict_next_day_roas")
 def predict_next_day_roas():
+    model = get_model()
+
     df = get_latest_feature_row()
 
     X = df.drop(columns=["metric_date", "target_next_day_roas"])
