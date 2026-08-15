@@ -18,7 +18,21 @@ def _serialize_row(row: bigquery.table.Row) -> dict[str, Any]:
     return {key: (value.isoformat() if hasattr(value, "isoformat") else value) for key, value in dict(row).items()}
 
 
+_METRIC_AGGREGATES = {
+    "roas": "SAFE_DIVIDE(SUM(attributed_revenue), SUM(spend))",
+    "cac": "SAFE_DIVIDE(SUM(spend), SUM(conversions))",
+}
+
+
 def _query_metric_series(metric: str, campaign_id: str | None, date_from: date | None, date_to: date | None) -> list[dict[str, Any]]:
+    """Return a date-indexed, deduplicated, cross-campaign-aggregated metric series.
+
+    Same dedup + aggregate reasoning as metrics.py's _query_trend(): without
+    it, multiple campaigns' raw per-row values for the same date get treated
+    as separate points, which both distorts the anomaly stats (mean/stddev
+    computed over undeduplicated, unaggregated values) and makes the chart
+    zigzag.
+    """
     clauses: list[str] = []
     params: list[bigquery.ScalarQueryParameter] = []
     if campaign_id:
@@ -32,10 +46,19 @@ def _query_metric_series(metric: str, campaign_id: str | None, date_from: date |
         params.append(bigquery.ScalarQueryParameter("date_to", "STRING", date_to.isoformat()))
 
     where_sql = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+    aggregate_expr = _METRIC_AGGREGATES[metric]
     query = f"""
-    SELECT CAST(metric_date AS STRING) AS date, {metric}
-    FROM `{PROJECT_ID}.{DATASET_ID}.fact_campaign_metrics`
-    {where_sql}
+    WITH deduped AS (
+        SELECT campaign_id, metric_date, spend, attributed_revenue, conversions
+        FROM `{PROJECT_ID}.{DATASET_ID}.fact_campaign_metrics`
+        {where_sql}
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY campaign_id, metric_date ORDER BY inserted_at DESC
+        ) = 1
+    )
+    SELECT CAST(metric_date AS STRING) AS date, {aggregate_expr} AS {metric}
+    FROM deduped
+    GROUP BY metric_date
     ORDER BY metric_date ASC
     """
     try:

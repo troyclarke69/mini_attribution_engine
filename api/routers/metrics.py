@@ -50,7 +50,7 @@ def _query_metrics(campaign_id: str | None = None) -> list[CampaignMetric]:
     SELECT campaign_id, metric_date, spend, attributed_revenue, roas, cac, conversions
     FROM `{PROJECT_ID}.{DATASET_ID}.fact_campaign_metrics`
     WHERE (@campaign_id IS NULL OR campaign_id = @campaign_id)
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY campaign_id ORDER BY metric_date DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY campaign_id ORDER BY metric_date DESC, inserted_at DESC) = 1
     ORDER BY attributed_revenue DESC
     """
     job_config = bigquery.QueryJobConfig(
@@ -170,8 +170,16 @@ def get_campaign(id: str) -> CampaignMetric:
     return rows[0]
 
 
-def _query_trend(metric_column: str, label: str, campaign_id: str | None, date_from: date | None, date_to: date | None) -> list[dict[str, Any]]:
-    """Return a date-indexed metric trend using campaign filters."""
+def _query_trend(campaign_id: str | None, date_from: date | None, date_to: date | None) -> list[dict[str, Any]]:
+    """Return a date-indexed, deduplicated, cross-campaign-aggregated metric trend.
+
+    fact_campaign_metrics has one row per (campaign_id, metric_date) per
+    pipeline run, and multiple campaigns share the same date. Without
+    deduping re-runs and aggregating across campaigns, the chart line
+    zigzags between whichever rows happen to load in whatever order -
+    the "messy blob" behavior. This dedupes to the latest row per
+    (campaign_id, metric_date), then sums across campaigns per date.
+    """
     clauses: list[str] = []
     params: list[bigquery.ScalarQueryParameter] = []
     if campaign_id is not None:
@@ -186,17 +194,31 @@ def _query_trend(metric_column: str, label: str, campaign_id: str | None, date_f
 
     where_sql = f" WHERE {' AND '.join(clauses)}" if clauses else ""
     query = f"""
-    SELECT CAST(metric_date AS STRING) AS date, {metric_column} AS {label}
-    FROM `{PROJECT_ID}.{DATASET_ID}.fact_campaign_metrics`
-    {where_sql}
+    WITH deduped AS (
+        SELECT campaign_id, metric_date, spend, attributed_revenue, conversions
+        FROM `{PROJECT_ID}.{DATASET_ID}.fact_campaign_metrics`
+        {where_sql}
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY campaign_id, metric_date ORDER BY inserted_at DESC
+        ) = 1
+    )
+    SELECT
+        CAST(metric_date AS STRING) AS date,
+        SUM(spend) AS spend,
+        SUM(attributed_revenue) AS attributed_revenue,
+        SUM(conversions) AS conversions,
+        SAFE_DIVIDE(SUM(attributed_revenue), SUM(spend)) AS roas,
+        SAFE_DIVIDE(SUM(spend), SUM(conversions)) AS cac
+    FROM deduped
+    GROUP BY metric_date
     ORDER BY metric_date ASC
     """
     try:
         rows = get_bq_client().query(query, job_config=bigquery.QueryJobConfig(query_parameters=params)).result()
         return [_serialize_row(row) for row in rows]
     except Exception as exc:
-        LOGGER.exception("Could not query %s trend", label)
-        raise HTTPException(status_code=503, detail=f"{label} trend is temporarily unavailable") from exc
+        LOGGER.exception("Could not query campaign metrics trend")
+        raise HTTPException(status_code=503, detail="Trend data is temporarily unavailable") from exc
 
 
 @router.get("/trend/roas")
@@ -206,7 +228,7 @@ def get_roas_trend(
     date_to: date | None = Query(default=None),
 ) -> list[dict[str, Any]]:
     """Return daily ROAS values."""
-    return _query_trend("roas", "roas", campaign_id, date_from, date_to)
+    return _query_trend(campaign_id, date_from, date_to)
 
 
 @router.get("/trend/cac")
@@ -216,7 +238,7 @@ def get_cac_trend(
     date_to: date | None = Query(default=None),
 ) -> list[dict[str, Any]]:
     """Return daily CAC values."""
-    return _query_trend("cac", "cac", campaign_id, date_from, date_to)
+    return _query_trend(campaign_id, date_from, date_to)
 
 
 @router.get("/trend/conversions")
@@ -226,7 +248,7 @@ def get_conversion_trend(
     date_to: date | None = Query(default=None),
 ) -> list[dict[str, Any]]:
     """Return daily conversion counts."""
-    return _query_trend("conversions", "conversions", campaign_id, date_from, date_to)
+    return _query_trend(campaign_id, date_from, date_to)
 
 
 @router.get("/trend/spend-revenue")
@@ -236,7 +258,7 @@ def get_spend_revenue_trend(
     date_to: date | None = Query(default=None),
 ) -> list[dict[str, Any]]:
     """Return daily spend and attributed revenue values."""
-    return _query_trend("spend, attributed_revenue", "spend", campaign_id, date_from, date_to)
+    return _query_trend(campaign_id, date_from, date_to)
 
 
 @raw_router.get("/ad-spend")
