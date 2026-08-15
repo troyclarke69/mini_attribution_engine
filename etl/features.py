@@ -1,11 +1,9 @@
-from google.cloud import bigquery
 import os
 
-PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-DATASET_ID = "marketing_demo"
+from etl.bq import get_bq_client
 
 def build_daily_features():
-    client = bigquery.Client(project=PROJECT_ID)
+    client = get_bq_client()
 
     sql_path = os.path.join(os.path.dirname(__file__), "..", "sql", "build_features.sql")
     with open(sql_path, "r") as f:

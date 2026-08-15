@@ -1,10 +1,10 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from etl.ml_training_data import extract_roas_training_data
+from etl.bq_extract_training_data import load_training_data
 
 def main():
-    df = extract_roas_training_data()
+    df = load_training_data()
 
     print("\n=== HEAD ===")
     print(df.head())
