@@ -14,3 +14,4 @@ service-account.json
 *.key.json
 *.json
 
+temp_creds.txt
