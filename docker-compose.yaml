@@ -8,55 +8,55 @@ services:
     command: webserver
     ports:
       - "8080:8080"
+    env_file: .env
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./etl:/opt/airflow/etl
       - ./airflow/airflow.db:/opt/airflow/airflow.db
       - ./airflow/logs:/opt/airflow/logs
-      - ./gcp/service-account.json:/run/secrets/gcp-service-account.json:ro
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       PYTHONPATH: /opt/airflow
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
-      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
+      GCP_CREDS: ${GCP_CREDS}
 
   airflow-scheduler:
     build:
       context: .
       dockerfile: airflow/Dockerfile
     command: scheduler
+    env_file: .env
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./etl:/opt/airflow/etl
       - ./airflow/airflow.db:/opt/airflow/airflow.db
       - ./airflow/logs:/opt/airflow/logs
-      - ./gcp/service-account.json:/run/secrets/gcp-service-account.json:ro
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       PYTHONPATH: /opt/airflow
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
-      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
+      GCP_CREDS: ${GCP_CREDS}
 
   airflow-worker:
     build:
       context: .
       dockerfile: airflow/Dockerfile
     command: celery worker
+    env_file: .env
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./etl:/opt/airflow/etl
       - ./airflow/airflow.db:/opt/airflow/airflow.db
       - ./airflow/logs:/opt/airflow/logs
-      - ./gcp/service-account.json:/run/secrets/gcp-service-account.json:ro
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       PYTHONPATH: /opt/airflow
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-demo-project}
       BQ_DATASET: ${BQ_DATASET:-marketing_demo}
-      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-service-account.json
+      GCP_CREDS: ${GCP_CREDS}
 
   fastapi:
     build:
