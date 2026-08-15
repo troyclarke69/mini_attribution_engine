@@ -303,3 +303,10 @@ python -m ml.inspect_features_importance
   same date were being plotted/analyzed as separate points instead of one
   aggregated line per date. Also fixed a bug where the spend/revenue trend
   silently dropped the revenue series entirely.
+
+# NOTE ON ROAS Anomaly Summary
+
+For each calendar date, the backend pulls every campaign's fact_campaign_metrics row for that day (deduplicated to the latest write per campaign/date, in case the pipeline re-ran), then computes one aggregate number: 
+total attributed revenue across all campaigns divided by total spend across all campaigns for that day — 
+SUM(attributed_revenue) / SUM(spend). 
+So for instance, a value like 59.034 means every dollar of ad spend that day was attributed roughly $59 of revenue, summed across your whole campaign portfolio, not any single campaign.

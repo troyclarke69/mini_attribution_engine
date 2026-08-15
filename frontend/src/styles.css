@@ -75,3 +75,9 @@ h1, h2, p { margin-top: 0; } h1 { max-width: 680px; margin-bottom: 16px; font-si
 
 .prediction-error { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .prediction-error .notice { margin: 0; padding: 10px 14px; }
+
+.heading-with-help { display: inline-flex; align-items: center; gap: 10px; }
+.help-icon { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 1px solid #d7ddd6; background: #fffdf8; color: #4b6953; font: 600 12px 'DM Mono', monospace; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.help-icon:hover { background: #eef3ec; }
+.modal p { line-height: 1.55; }
+.modal p + p { margin-top: 12px; }

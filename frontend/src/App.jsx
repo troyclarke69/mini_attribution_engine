@@ -7,6 +7,7 @@ import SummaryCards from "./components/SummaryCards";
 import LineChart from "./components/charts/LineChart";
 import DualAxisChart from "./components/charts/DualAxisChart";
 import RawTable from "./components/tables/RawTable";
+import HelpModal from "./components/HelpModal";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const emptySummary = { spend: 0, attributed_revenue: 0, roas: 0, cac: 0, conversions: 0, campaigns: [] };
@@ -253,7 +254,24 @@ function App() {
             <div className="panel-header">
               <div>
                 <p className="eyebrow">MODEL OUTPUT</p>
-                <h2>Predicted Next-Day ROAS</h2>
+                <h2 className="heading-with-help">
+                  Predicted Next-Day ROAS
+                  <HelpModal title="How this prediction works">
+                    <p>
+                      This comes from a RandomForest regression model trained on this
+                      project&rsquo;s historical campaign metrics. It takes the most recent
+                      day&rsquo;s spend, attributed revenue, conversions, CAC, ROAS, and
+                      7-day rolling averages/volatility, and predicts what tomorrow&rsquo;s
+                      aggregate ROAS is likely to be.
+                    </p>
+                    <p>
+                      The model is trained offline against past days where the actual
+                      next-day outcome is already known - it does not update itself
+                      automatically, so its accuracy depends on how recently it was
+                      retrained relative to the current data.
+                    </p>
+                  </HelpModal>
+                </h2>
               </div>
             </div>
 
@@ -279,17 +297,73 @@ function App() {
           ) : (
             <>
               <div className="chart-grid">
-                <LineChart data={roasData} title="ROAS" dataKey="roas" color="#1d6f5c" />
-                <LineChart data={cacData} title="CAC" dataKey="cac" color="#c77d29" />
+                <LineChart
+                  data={roasData}
+                  title="ROAS"
+                  dataKey="roas"
+                  color="#1d6f5c"
+                  unitLabel="(x)"
+                  decimals={3}
+                  help={
+                    <HelpModal title="What ROAS measures">
+                      <p>
+                        ROAS (Return on Ad Spend) is total attributed revenue divided
+                        by total spend, summed across every campaign, for each day. A
+                        value of 3 means $3 of attributed revenue for every $1 spent
+                        that day - it is a ratio (an &ldquo;x&rdquo; multiplier), not
+                        a percentage.
+                      </p>
+                    </HelpModal>
+                  }
+                />
+                <LineChart
+                  data={cacData}
+                  title="CAC"
+                  dataKey="cac"
+                  color="#c77d29"
+                  unitLabel="($)"
+                  decimals={3}
+                  help={
+                    <HelpModal title="What CAC measures">
+                      <p>
+                        CAC (Customer Acquisition Cost) is total spend divided by
+                        total conversions, summed across every campaign, for each
+                        day - the average cost, in dollars, to acquire one
+                        conversion that day.
+                      </p>
+                    </HelpModal>
+                  }
+                />
                 <LineChart data={conversionData} title="Conversions" dataKey="conversions" color="#2f6dbb" />
-                <DualAxisChart data={spendRevenueData} />
+                <DualAxisChart data={spendRevenueData} decimals={2} />
               </div>
 
               <section className="panel anomaly-panel">
                 <div className="panel-header">
                   <div>
                     <p className="eyebrow">ANOMALY SUMMARY</p>
-                    <h2>Recent ROAS alerts</h2>
+                    <h2 className="heading-with-help">
+                      Recent ROAS alerts
+                      <HelpModal title="How anomaly severity is calculated">
+                        <p>
+                          For each day, ROAS here is total attributed revenue divided by
+                          total spend, summed across every campaign. Each day is then
+                          compared against the rest of the visible series using four
+                          signals: how many standard deviations it sits from the average
+                          (z-score), a more outlier-resistant version of the same idea
+                          using the median (modified z-score), whether it falls outside
+                          the typical interquartile range, and how much it changed from
+                          the previous day.
+                        </p>
+                        <p>
+                          A day is marked HIGH if any signal crosses a strict threshold,
+                          MEDIUM if a looser threshold is crossed, and otherwise it is not
+                          flagged as notable. Because the baseline stats recalculate from
+                          the whole series each time, a sustained trend shift can show up
+                          as several flagged days in a row rather than a single spike.
+                        </p>
+                      </HelpModal>
+                    </h2>
                   </div>
                 </div>
                 <div className="anomaly-list">
