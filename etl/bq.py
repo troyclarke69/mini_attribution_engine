@@ -55,9 +55,19 @@ def _table_id(table_name: str) -> str:
     return f"{PROJECT_ID}.{DATASET_ID}.{table_name}"
 
 
-def _insert_rows(table_name: str, rows: Sequence[Mapping[str, Any]]) -> None:
-    """Load rows into a BigQuery table via a batch JSON load job."""
-    if not rows:
+def _insert_rows(
+    table_name: str,
+    rows: Sequence[Mapping[str, Any]],
+    write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
+) -> None:
+    """Load rows into a BigQuery table via a batch JSON load job.
+
+    write_disposition defaults to WRITE_APPEND for incremental sources
+    (ad spend, orders, events). Callers that recompute their full result
+    set from scratch on every run (attribution, campaign metrics) must
+    pass WRITE_TRUNCATE, or every run just keeps appending duplicates.
+    """
+    if not rows and write_disposition != bigquery.WriteDisposition.WRITE_TRUNCATE:
         LOGGER.info("No rows to write to %s", table_name)
         return
 
@@ -66,13 +76,13 @@ def _insert_rows(table_name: str, rows: Sequence[Mapping[str, Any]]) -> None:
 
     job_config = bigquery.LoadJobConfig(
         source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
-        write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        write_disposition=write_disposition,
     )
 
     job = client.load_table_from_json(list(rows), table_id, job_config=job_config)
     job.result()
 
-    LOGGER.info("Inserted %d rows into %s", len(rows), table_name)
+    LOGGER.info("Loaded %d rows into %s (%s)", len(rows), table_name, write_disposition)
 
 
 # ---------------------------------------------------------------------------
@@ -91,11 +101,17 @@ def write_events(rows: Sequence[Mapping[str, Any]]) -> None:
 
 
 def write_attribution(rows: Sequence[Mapping[str, Any]]) -> None:
-    _insert_rows("fact_attribution", rows)
+    """Replace fact_attribution wholesale - each run recomputes the full
+    7-day attribution window from scratch, so appending would duplicate
+    every row on every run."""
+    _insert_rows("fact_attribution", rows, write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
 
 
 def write_campaign_metrics(rows: Sequence[Mapping[str, Any]]) -> None:
-    _insert_rows("fact_campaign_metrics", rows)
+    """Replace fact_campaign_metrics wholesale - same reasoning as
+    write_attribution(): this is a full recompute, not an incremental
+    append."""
+    _insert_rows("fact_campaign_metrics", rows, write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
 
 
 # ---------------------------------------------------------------------------
